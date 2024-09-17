@@ -1,31 +1,53 @@
 package main
 
 import (
-    "encoding/json"
-    "log"
-    "net/http"
+	"encoding/json"
+	"log"
+	"net/http"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Book struct {
-    ID     string `json:"id"`
-    Title  string `json:"title"`
-    Author string `json:"author"`
+	ID     uint   `json:"id" gorm:"primaryKey"`
+	Title  string `json:"title"`
+	Author string `json:"author"`
 }
 
-var books = []Book{
-    {ID: "1", Title: "The Go Programming Language", Author: "Alan A. A. Donovan"},
-    {ID: "2", Title: "Introducing Go", Author: "Caleb Doxsey"},
-    {ID: "3", Title: "Go in Action", Author: "William Kennedy"},
-}
+var db *gorm.DB
+var err error
 
 func getBooks(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(books)
+	var books []Book
+	db.Find(&books)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(books)
 }
 
 func main() {
-    http.HandleFunc("/books", getBooks)
-    log.Println("Server started at :8080")
-    log.Fatal(http.ListenAndServe(":8080", nil))
-}
+	// Use port 5432 if port-forwarding, or 30007 if using NodePort
+	dsn := "host=localhost user=postgres password=mysecretpassword dbname=postgres port=5432 sslmode=disable"
+	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
 
+	db.AutoMigrate(&Book{})
+
+	// Seed data if table is empty
+	var count int64
+	db.Model(&Book{}).Count(&count)
+	if count == 0 {
+		books := []Book{
+			{Title: "The Go Programming Language", Author: "Alan A. A. Donovan"},
+			{Title: "Introducing Go", Author: "Caleb Doxsey"},
+			{Title: "Go in Action", Author: "William Kennedy"},
+		}
+		db.Create(&books)
+	}
+
+	http.HandleFunc("/books", getBooks)
+	log.Println("Server started at :8081")
+	log.Fatal(http.ListenAndServe(":8081", nil))
+}

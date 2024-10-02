@@ -1,4 +1,4 @@
-# Your API Name
+# Golang API
 
 Brief description of what your API does and its main purpose.
 

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Books</title>
+</head>
+<body>
+    <h2>Books List</h2>
+    <ul>
+        {{range .}}
+        <li>{{.Title}} by {{.Author}}</li>
+        {{end}}
+    </ul>
+</body>
+</html>
+
